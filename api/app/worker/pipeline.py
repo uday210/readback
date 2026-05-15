@@ -20,6 +20,22 @@ async def _notify(text: str) -> None:
         await client.post(api_url, json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"})
 
 
+async def _send_audio(audio_url: str, title: str) -> None:
+    if not settings.allowed_user_ids:
+        return
+    chat_id = settings.allowed_user_ids[0]
+    api_url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendAudio"
+    async with httpx.AsyncClient(timeout=60) as client:
+        r = await client.post(api_url, json={
+            "chat_id": chat_id,
+            "audio": audio_url,
+            "title": title[:64],
+            "parse_mode": "HTML",
+        })
+        if r.status_code != 200:
+            logger.warning(f"sendAudio failed: {r.text[:200]}")
+
+
 async def run_pipeline(link_id: str) -> None:
     db = get_supabase()
 
@@ -55,8 +71,10 @@ async def run_pipeline(link_id: str) -> None:
         await _notify(f"📝 Notes ready (podcast failed): <b>{title[:60]}</b>")
         return
 
-    await _notify(
-        f"🎧 Episode ready: <b>{title[:60]}</b>\n"
-        f"Open your web app to read notes and listen."
-    )
+    podcast = db.table("podcasts").select("audio_url").eq("link_id", link_id).execute()
+    audio_url = podcast.data[0]["audio_url"] if podcast.data else None
+
+    await _notify(f"🎧 Episode ready: <b>{title[:60]}</b>")
+    if audio_url:
+        await _send_audio(audio_url, title)
     logger.info(f"Pipeline complete for {link_id}")
