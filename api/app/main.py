@@ -61,6 +61,64 @@ async def debug_status(link_id: str):
     }
 
 
+@app.get("/debug/podcast-test/{link_id}")
+async def debug_podcast_test(link_id: str):
+    """Test each podcast step individually and return errors immediately."""
+    import traceback
+    results: dict = {}
+
+    # Step 1: script generation
+    try:
+        from app.podcast.script import generate_script
+        lines = await generate_script(link_id)
+        results["script"] = f"ok — {len(lines)} lines"
+        first_line = lines[0] if lines else None
+    except Exception as e:
+        results["script_error"] = str(e)
+        results["script_traceback"] = traceback.format_exc()
+        return results
+
+    # Step 2: one TTS call (first line only)
+    try:
+        from app.podcast.tts_elevenlabs import synthesize
+        from app.config import settings
+        voice = settings.elevenlabs_voice_a
+        audio = await synthesize(first_line["text"][:200], voice)
+        results["tts"] = f"ok — {len(audio)} bytes, voice={voice}"
+    except Exception as e:
+        results["tts_error"] = str(e)
+        results["tts_traceback"] = traceback.format_exc()
+        return results
+
+    # Step 3: stitch (single segment, no concat needed)
+    try:
+        from app.podcast.stitch import stitch_audio
+        mp3 = stitch_audio([audio])
+        results["stitch"] = f"ok — {len(mp3)} bytes"
+    except Exception as e:
+        results["stitch_error"] = str(e)
+        results["stitch_traceback"] = traceback.format_exc()
+        return results
+
+    # Step 4: Supabase Storage upload
+    try:
+        from app.db import get_supabase
+        db = get_supabase()
+        test_path = f"test_{link_id[:8]}.mp3"
+        db.storage.from_("podcasts").upload(
+            path=test_path,
+            file=mp3,
+            file_options={"content-type": "audio/mpeg", "upsert": "true"},
+        )
+        signed = db.storage.from_("podcasts").create_signed_url(test_path, expires_in=3600)
+        results["storage"] = f"ok — {signed.get('signedURL') or signed.get('signedUrl', '')[:60]}"
+    except Exception as e:
+        results["storage_error"] = str(e)
+        results["storage_traceback"] = traceback.format_exc()
+
+    return results
+
+
 @app.get("/debug/voices")
 async def debug_voices():
     """List ElevenLabs voices available in this account."""
