@@ -132,6 +132,29 @@ async def debug_voices():
     return r.json()
 
 
+@app.get("/debug/tts-raw")
+async def debug_tts_raw():
+    """Make a raw TTS call and return full response details."""
+    import os
+    import httpx
+    from app.config import settings
+    env_key = os.environ.get("ELEVENLABS_API_KEY", "")
+    settings_key = settings.elevenlabs_api_key
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.post(
+            "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL",
+            headers={"xi-api-key": settings_key, "Content-Type": "application/json"},
+            json={"text": "Hello world", "model_id": "eleven_multilingual_v2"},
+        )
+    return {
+        "status_code": r.status_code,
+        "response_body": r.text[:500],
+        "env_key_len": len(env_key),
+        "settings_key_len": len(settings_key),
+        "keys_match": env_key == settings_key,
+    }
+
+
 @app.get("/debug/config")
 async def debug_config():
     from app.config import settings
