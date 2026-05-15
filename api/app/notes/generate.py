@@ -49,13 +49,20 @@ def _parse_response(raw: str) -> tuple[str, list[str], str | None, list[str]]:
 async def generate_notes(link_id: str) -> None:
     db = get_supabase()
 
-    content_row = db.table("contents").select("*").eq("link_id", link_id).single().execute()
-    if not content_row.data or not content_row.data.get("text"):
+    content_row = (
+        db.table("contents")
+        .select("*")
+        .eq("link_id", link_id)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if not content_row.data or not content_row.data[0].get("text"):
         logger.warning(f"No content for {link_id} — skipping notes")
         return
 
-    text: str = content_row.data["text"]
-    word_count: int = content_row.data.get("word_count") or len(text.split())
+    text: str = content_row.data[0]["text"]
+    word_count: int = content_row.data[0].get("word_count") or len(text.split())
 
     if word_count < 100:
         logger.warning(f"Content too short ({word_count} words) for {link_id}")

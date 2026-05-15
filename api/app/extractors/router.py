@@ -44,6 +44,8 @@ async def run_extraction(link_id: str) -> None:
     try:
         result = await _dispatch(source_type, url)
 
+        # Remove stale rows from previous runs before inserting fresh content
+        db.table("contents").delete().eq("link_id", link_id).execute()
         db.table("contents").insert({
             "link_id": link_id,
             "text": result["text"],
