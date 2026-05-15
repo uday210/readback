@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from datetime import datetime, timedelta, timezone
@@ -28,12 +29,14 @@ def detect_source_type(url: str) -> str:
     return "article"
 
 
-async def send_message(chat_id: int, text: str) -> None:
-    url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
+async def send_message(chat_id: int, text: str) -> int | None:
+    api_url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
     async with httpx.AsyncClient() as client:
-        r = await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"})
+        r = await client.post(api_url, json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"})
         if r.status_code != 200:
             logger.error(f"Telegram sendMessage failed: {r.text}")
+            return None
+        return r.json()["result"]["message_id"]
 
 
 async def handle_update(update: dict) -> None:
@@ -43,7 +46,9 @@ async def handle_update(update: dict) -> None:
 
     user_id = message.get("from", {}).get("id")
     chat_id = message.get("chat", {}).get("id")
-    text = message.get("text", "")
+    text = message.get("text", "") or ""
+    reply_to = message.get("reply_to_message", {}) or {}
+    replied_msg_id = reply_to.get("message_id")
 
     if settings.allowed_user_ids and user_id not in settings.allowed_user_ids:
         logger.warning(f"Rejected update from unauthorized user {user_id}")
@@ -64,6 +69,18 @@ async def handle_update(update: dict) -> None:
         logger.exception("Failed to connect to Supabase")
         await send_message(chat_id, f"❌ Database not configured: <code>{e}</code>")
         return
+
+    # Handle LinkedIn paste reply
+    if replied_msg_id:
+        from app.extractors.router import handle_paste, pending_pastes
+        link_id = pending_pastes.get(replied_msg_id)
+        if link_id and text:
+            await handle_paste(link_id, text)
+            del pending_pastes[replied_msg_id]
+            await send_message(chat_id, f"✅ Paste saved for <code>{link_id[:8]}</code> — processing notes next.")
+            from app.worker.pipeline import run_pipeline
+            asyncio.create_task(run_pipeline(link_id))
+            return
 
     if text.startswith("/list"):
         rows = (
@@ -90,9 +107,9 @@ async def handle_update(update: dict) -> None:
         return
 
     replies = []
+    link_ids = []
     for url in urls:
         try:
-            # idempotency: skip if same URL saved in last 24 hours
             cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
             existing = (
                 db.table("links")
@@ -107,21 +124,25 @@ async def handle_update(update: dict) -> None:
                 continue
 
             source_type = detect_source_type(url)
-            row = db.table("links").insert(
-                {
-                    "url": url,
-                    "source_type": source_type,
-                    "source_platform": "telegram",
-                    "raw_message": text,
-                    "status": "received",
-                }
-            ).execute()
+            row = db.table("links").insert({
+                "url": url,
+                "source_type": source_type,
+                "source_platform": "telegram",
+                "raw_message": text,
+                "status": "received",
+            }).execute()
 
             link_id = row.data[0]["id"]
-            replies.append(f"✅ Saved ({source_type}) — id: <code>{link_id[:8]}</code>")
+            link_ids.append(link_id)
+            replies.append(f"✅ Saved ({source_type}) — id: <code>{link_id[:8]}</code>\nExtracting content...")
             logger.info(f"Saved link {link_id} ({source_type}) from user {user_id}")
         except Exception as e:
             logger.exception(f"Failed to save {url}")
             replies.append(f"❌ Failed to save: {url[:60]}\n<code>{e}</code>")
 
     await send_message(chat_id, "\n".join(replies))
+
+    # Kick off pipeline for each new link
+    from app.worker.pipeline import run_pipeline
+    for link_id in link_ids:
+        asyncio.create_task(run_pipeline(link_id))
