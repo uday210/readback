@@ -106,6 +106,27 @@ async def handle_update(update: dict) -> None:
         await send_message(chat_id, "No URL found. Share a link to get started!")
         return
 
+    # Napkin.ai diagram URL — save to most recent podcast_ready link
+    napkin_urls = [u for u in urls if "napkin.ai" in u]
+    if napkin_urls:
+        napkin_url = napkin_urls[0]
+        recent = (
+            db.table("links")
+            .select("id, title")
+            .eq("status", "podcast_ready")
+            .order("updated_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if recent.data:
+            link_id = recent.data[0]["id"]
+            title = recent.data[0].get("title") or link_id[:8]
+            db.table("notes").update({"napkin_url": napkin_url}).eq("link_id", link_id).execute()
+            await send_message(chat_id, f"📊 Napkin diagram saved for <b>{title[:60]}</b>")
+        else:
+            await send_message(chat_id, "No podcast_ready link found to attach the diagram to.")
+        return
+
     replies = []
     link_ids = []
     for url in urls:

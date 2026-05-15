@@ -9,6 +9,7 @@ type LinkRow = {
   source_type: string;
   status: string;
   created_at: string;
+  podcasts: { audio_url: string | null }[];
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,7 +25,7 @@ export default async function Home() {
   const supabase = createClient();
   const { data: links, error } = await supabase
     .from("links")
-    .select("id, url, title, source_type, status, created_at")
+    .select("id, url, title, source_type, status, created_at, podcasts(audio_url)")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -45,22 +46,28 @@ export default async function Home() {
       )}
 
       <ul className="space-y-3">
-        {links?.map((link: LinkRow) => (
-          <li key={link.id} className="bg-gray-900 rounded-xl p-4 hover:bg-gray-800 transition-colors">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">{link.source_type}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[link.status] ?? STATUS_COLORS.received}`}>
-                {link.status}
-              </span>
-            </div>
-            <a href={`/links/${link.id}`} className="font-medium hover:text-blue-400 transition-colors line-clamp-2 block">
-              {link.title || link.url}
-            </a>
-            <p className="text-xs text-gray-500 mt-1">
-              {new Date(link.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
-            </p>
-          </li>
-        ))}
+        {links?.map((link: LinkRow) => {
+          const audioUrl = link.podcasts?.[0]?.audio_url ?? null;
+          return (
+            <li key={link.id} className="bg-gray-900 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">{link.source_type}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[link.status] ?? STATUS_COLORS.received}`}>
+                  {link.status}
+                </span>
+              </div>
+              <a href={`/links/${link.id}`} className="font-medium hover:text-blue-400 transition-colors line-clamp-2 block">
+                {link.title || link.url}
+              </a>
+              <p className="text-xs text-gray-500 mt-1">
+                {new Date(link.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+              </p>
+              {audioUrl && (
+                <audio controls src={audioUrl} className="w-full mt-3 h-8" />
+              )}
+            </li>
+          );
+        })}
       </ul>
     </main>
   );

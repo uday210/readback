@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase";
 import { notFound } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export const revalidate = 0;
 
@@ -58,9 +60,30 @@ export default async function LinkDetail({ params }: { params: { id: string } })
               ))}
             </div>
           )}
-          <div className="prose prose-invert prose-sm max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-gray-300 font-sans">{notes.markdown}</pre>
+
+          <div className="prose prose-invert prose-sm max-w-none
+            prose-headings:text-gray-100 prose-headings:font-semibold
+            prose-p:text-gray-300 prose-p:leading-relaxed
+            prose-li:text-gray-300
+            prose-strong:text-gray-100
+            prose-code:text-indigo-300 prose-code:bg-gray-800 prose-code:rounded prose-code:px-1
+            prose-blockquote:border-indigo-500 prose-blockquote:text-gray-400">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {notes.markdown}
+            </ReactMarkdown>
           </div>
+
+          {notes.napkin_url && (
+            <div className="mt-8">
+              <p className="text-sm font-semibold mb-3 text-gray-200">Visual Diagram</p>
+              <iframe
+                src={notes.napkin_url}
+                className="w-full rounded-xl border border-gray-700"
+                style={{ height: "480px" }}
+                allow="fullscreen"
+              />
+            </div>
+          )}
         </section>
       ) : (
         <p className="text-gray-500 text-sm">Notes not yet generated — check back soon.</p>
