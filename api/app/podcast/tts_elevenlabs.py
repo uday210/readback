@@ -12,12 +12,17 @@ ELEVENLABS_API = "https://api.elevenlabs.io/v1"
 KNOWN_VOICE_IDS: dict[str, str] = {
     "rachel": "21m00Tcm4TlvDq8ikWAM",
     "adam": "pNInz6obpgDQGcFmaJgB",
-    "bella": "EXAVITQu4vr4xnSDxMaL",
-    "elli": "MF3mGyEYCl7XYWbV9V6O",
-    "josh": "TxGEqnHWrfWFTfGW9XjX",
-    "sam": "yoZ06aMxZJJ28mfd3POQ",
-    "domi": "AZnzlk1XvdvUeBnXmlld",
-    "arnold": "VR6AewLTigWG4xSOukaG",
+    "sarah": "EXAVITQu4vr4xnSDxMaL",
+    "brian": "nPczCjzI2devNBz1zQrb",
+    "alice": "Xb7hH8MSUJpSbSDYk0k2",
+    "daniel": "onwK4e9ZLuTAKqWW03F9",
+    "bella": "hpp4J3VqNfWAUOO0d1Us",
+    "charlie": "IKne3meq5aSn9XLyUdCD",
+    "george": "JBFqnCBsd6RMkjVDRZzb",
+    "jessica": "cgSgspJ2msm6clMCkdW9",
+    "lily": "pFZP5JQG7iQjIQuC4Bku",
+    "bill": "pqHfZKP75CvOlQylNhV4",
+    "eric": "cjVigY5qzO86Huf0OWal",
 }
 
 _voice_id_cache: dict[str, str] = {}
