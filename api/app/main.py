@@ -143,4 +143,6 @@ async def debug_config():
         "supabase_key_set": bool(settings.supabase_service_role_key),
         "anthropic_key_set": bool(settings.anthropic_api_key),
         "elevenlabs_key_set": bool(settings.elevenlabs_api_key),
+        "elevenlabs_key_preview": (settings.elevenlabs_api_key[:8] + "..." + settings.elevenlabs_api_key[-4:]) if settings.elevenlabs_api_key else None,
+        "elevenlabs_key_len": len(settings.elevenlabs_api_key),
     }
