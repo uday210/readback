@@ -25,6 +25,34 @@ Do not force a connection.
 ## Follow-Up Questions
 3–5 questions worth investigating further.
 
-After the markdown, on a new line, output a single JSON object on one line:
+---
+
+After the markdown sections above, output the following four blocks in this exact order.
+
+## Mermaid Diagram
+A concept map or mind map of the main ideas and their relationships.
+Use `graph TD` or `mindmap` syntax. Keep it to 8–12 nodes maximum.
+Output as a fenced code block tagged `mermaid`. Example:
+
+```mermaid
+graph TD
+    A[Main Concept] --> B[Idea 1]
+    A --> C[Idea 2]
+    B --> D[Detail]
+```
+
+## Flashcards
+5–8 question-answer pairs covering the most important ideas for spaced repetition.
+Output as a single-line JSON array immediately after the heading (no code fence):
+[{"q": "question text", "a": "answer text"}, ...]
+
+## Quiz
+3–5 multiple-choice questions to test comprehension. Each question has exactly 4 options.
+Output as a single-line JSON array immediately after the heading (no code fence):
+[{"question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "A"}, ...]
+
+---
+
+On the very last line, output a single JSON object:
 {"tags": ["tag1","tag2","tag3"]}
 Use 3–6 lowercase tags, kebab-case if multi-word.
