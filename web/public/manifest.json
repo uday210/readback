@@ -1,0 +1,10 @@
+{
+  "name": "Readback",
+  "short_name": "Readback",
+  "description": "Your personal learning pipeline",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "icons": []
+}
