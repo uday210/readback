@@ -1,6 +1,6 @@
 import logging
 
-from app.db import supabase
+from app.db import get_supabase
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +11,6 @@ async def run_pipeline(link_id: str) -> None:
     Phase 2 wires up extraction, Phase 3 adds notes, Phase 4 adds podcast.
     """
     logger.info(f"Pipeline triggered for {link_id} — not yet implemented beyond Phase 1")
-    supabase.table("links").update({"status": "failed", "error": "Pipeline phases 2–4 not yet implemented"}).eq(
+    get_supabase().table("links").update({"status": "failed", "error": "Pipeline phases 2–4 not yet implemented"}).eq(
         "id", link_id
     ).execute()

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.db import supabase
+from app.db import get_supabase
 
 router = APIRouter(prefix="/links")
 
@@ -8,7 +8,7 @@ router = APIRouter(prefix="/links")
 @router.get("")
 async def list_links(limit: int = 20, offset: int = 0):
     rows = (
-        supabase.table("links")
+        get_supabase().table("links")
         .select("*, notes(id,summary,tags), podcasts(id,audio_url,duration_sec)")
         .order("created_at", desc=True)
         .range(offset, offset + limit - 1)
@@ -20,7 +20,7 @@ async def list_links(limit: int = 20, offset: int = 0):
 @router.get("/{link_id}")
 async def get_link(link_id: str):
     row = (
-        supabase.table("links")
+        get_supabase().table("links")
         .select("*, contents(*), notes(*), podcasts(*)")
         .eq("id", link_id)
         .single()

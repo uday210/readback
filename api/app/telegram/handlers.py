@@ -4,7 +4,7 @@ import re
 import httpx
 
 from app.config import settings
-from app.db import supabase
+from app.db import get_supabase
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +57,11 @@ async def handle_update(update: dict) -> None:
         )
         return
 
+    db = get_supabase()
+
     if text.startswith("/list"):
         rows = (
-            supabase.table("links")
+            db.table("links")
             .select("id,title,url,status,created_at")
             .order("created_at", desc=True)
             .limit(10)
@@ -85,7 +87,7 @@ async def handle_update(update: dict) -> None:
     for url in urls:
         # idempotency: skip if same URL saved in last 24 hours
         existing = (
-            supabase.table("links")
+            db.table("links")
             .select("id")
             .eq("url", url)
             .gte("created_at", "now() - interval '24 hours'")
@@ -97,7 +99,7 @@ async def handle_update(update: dict) -> None:
             continue
 
         source_type = detect_source_type(url)
-        row = supabase.table("links").insert(
+        row = db.table("links").insert(
             {
                 "url": url,
                 "source_type": source_type,
