@@ -10,5 +10,5 @@ RUN pip install --no-cache-dir .
 COPY app/ app/
 COPY prompts/ prompts/
 
-EXPOSE ${PORT:-8080}
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+COPY run.py .
+CMD ["python", "run.py"]
