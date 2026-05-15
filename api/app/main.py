@@ -35,6 +35,20 @@ async def healthz():
     return {"ok": True}
 
 
+@app.get("/debug/run/{link_id}")
+async def debug_run(link_id: str):
+    """Manually re-trigger the full pipeline for a link. Returns errors inline."""
+    import traceback
+    from app.worker.pipeline import run_pipeline
+    try:
+        await run_pipeline(link_id)
+        from app.db import get_supabase
+        link = get_supabase().table("links").select("status,title,error").eq("id", link_id).single().execute()
+        return {"ok": True, "link": link.data}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
 @app.get("/debug/config")
 async def debug_config():
     from app.config import settings
