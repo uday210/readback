@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -92,11 +93,12 @@ async def handle_update(update: dict) -> None:
     for url in urls:
         try:
             # idempotency: skip if same URL saved in last 24 hours
+            cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
             existing = (
                 db.table("links")
                 .select("id")
                 .eq("url", url)
-                .gte("created_at", "now() - interval '24 hours'")
+                .gte("created_at", cutoff)
                 .execute()
             )
             if existing.data:
