@@ -37,35 +37,28 @@ async def healthz():
 
 @app.get("/debug/run/{link_id}")
 async def debug_run(link_id: str):
-    """Re-trigger the full pipeline for a link with full error visibility."""
-    import traceback
+    """Fire the full pipeline in the background and return immediately.
+    Poll /debug/status/{link_id} to check progress."""
+    import asyncio
+    from app.worker.pipeline import run_pipeline
+    asyncio.create_task(run_pipeline(link_id))
+    return {"started": True, "link_id": link_id, "poll": f"/debug/status/{link_id}"}
+
+
+@app.get("/debug/status/{link_id}")
+async def debug_status(link_id: str):
+    """Check current pipeline status for a link."""
     from app.db import get_supabase
-    from app.notes.generate import generate_notes
-    from app.podcast.generate import generate_podcast
-
     db = get_supabase()
-    results: dict = {}
-
-    link = db.table("links").select("status,title,error").eq("id", link_id).single().execute()
-    results["before"] = link.data
-
-    try:
-        await generate_notes(link_id)
-        results["notes"] = "ok"
-    except Exception as e:
-        results["notes_error"] = str(e)
-        results["notes_traceback"] = traceback.format_exc()
-
-    try:
-        await generate_podcast(link_id)
-        results["podcast"] = "ok"
-    except Exception as e:
-        results["podcast_error"] = str(e)
-        results["podcast_traceback"] = traceback.format_exc()
-
-    link = db.table("links").select("status,title,error").eq("id", link_id).single().execute()
-    results["after"] = link.data
-    return results
+    link = db.table("links").select("status,title,error,updated_at").eq("id", link_id).single().execute()
+    podcast = db.table("podcasts").select("audio_url,duration_sec,created_at").eq("link_id", link_id).execute()
+    notes = db.table("notes").select("id,tags,created_at").eq("link_id", link_id).execute()
+    return {
+        "link": link.data,
+        "has_notes": bool(notes.data),
+        "has_podcast": bool(podcast.data),
+        "audio_url": podcast.data[0]["audio_url"] if podcast.data else None,
+    }
 
 
 @app.get("/debug/voices")
