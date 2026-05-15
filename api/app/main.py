@@ -37,25 +37,31 @@ async def healthz():
 
 @app.get("/debug/run/{link_id}")
 async def debug_run(link_id: str):
-    """Manually re-trigger the full pipeline for a link. Returns errors inline."""
+    """Re-trigger the full pipeline for a link with full error visibility."""
     import traceback
     from app.db import get_supabase
     from app.notes.generate import generate_notes
+    from app.podcast.generate import generate_podcast
 
-    results = {}
-
-    # Run extraction only if not already extracted
     db = get_supabase()
+    results: dict = {}
+
     link = db.table("links").select("status,title,error").eq("id", link_id).single().execute()
     results["before"] = link.data
 
-    # Always attempt notes directly so we see the real error
     try:
         await generate_notes(link_id)
         results["notes"] = "ok"
     except Exception as e:
         results["notes_error"] = str(e)
         results["notes_traceback"] = traceback.format_exc()
+
+    try:
+        await generate_podcast(link_id)
+        results["podcast"] = "ok"
+    except Exception as e:
+        results["podcast_error"] = str(e)
+        results["podcast_traceback"] = traceback.format_exc()
 
     link = db.table("links").select("status,title,error").eq("id", link_id).single().execute()
     results["after"] = link.data
