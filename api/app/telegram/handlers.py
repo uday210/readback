@@ -57,7 +57,12 @@ async def handle_update(update: dict) -> None:
         )
         return
 
-    db = get_supabase()
+    try:
+        db = get_supabase()
+    except Exception as e:
+        logger.exception("Failed to connect to Supabase")
+        await send_message(chat_id, f"❌ Database not configured: <code>{e}</code>")
+        return
 
     if text.startswith("/list"):
         rows = (
@@ -85,32 +90,36 @@ async def handle_update(update: dict) -> None:
 
     replies = []
     for url in urls:
-        # idempotency: skip if same URL saved in last 24 hours
-        existing = (
-            db.table("links")
-            .select("id")
-            .eq("url", url)
-            .gte("created_at", "now() - interval '24 hours'")
-            .execute()
-        )
-        if existing.data:
-            link_id = existing.data[0]["id"]
-            replies.append(f"Already saved — id: <code>{link_id[:8]}</code>")
-            continue
+        try:
+            # idempotency: skip if same URL saved in last 24 hours
+            existing = (
+                db.table("links")
+                .select("id")
+                .eq("url", url)
+                .gte("created_at", "now() - interval '24 hours'")
+                .execute()
+            )
+            if existing.data:
+                link_id = existing.data[0]["id"]
+                replies.append(f"Already saved — id: <code>{link_id[:8]}</code>")
+                continue
 
-        source_type = detect_source_type(url)
-        row = db.table("links").insert(
-            {
-                "url": url,
-                "source_type": source_type,
-                "source_platform": "telegram",
-                "raw_message": text,
-                "status": "received",
-            }
-        ).execute()
+            source_type = detect_source_type(url)
+            row = db.table("links").insert(
+                {
+                    "url": url,
+                    "source_type": source_type,
+                    "source_platform": "telegram",
+                    "raw_message": text,
+                    "status": "received",
+                }
+            ).execute()
 
-        link_id = row.data[0]["id"]
-        replies.append(f"✅ Saved ({source_type}) — id: <code>{link_id[:8]}</code>")
-        logger.info(f"Saved link {link_id} ({source_type}) from user {user_id}")
+            link_id = row.data[0]["id"]
+            replies.append(f"✅ Saved ({source_type}) — id: <code>{link_id[:8]}</code>")
+            logger.info(f"Saved link {link_id} ({source_type}) from user {user_id}")
+        except Exception as e:
+            logger.exception(f"Failed to save {url}")
+            replies.append(f"❌ Failed to save: {url[:60]}\n<code>{e}</code>")
 
     await send_message(chat_id, "\n".join(replies))

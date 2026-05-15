@@ -19,5 +19,8 @@ async def telegram_webhook(
         raise HTTPException(status_code=403, detail="Invalid secret token")
 
     update = await request.json()
-    await handle_update(update)
+    try:
+        await handle_update(update)
+    except Exception:
+        logger.exception("Unhandled error in handle_update")
     return {"ok": True}

@@ -33,3 +33,17 @@ app.include_router(podcasts_router)
 @app.get("/healthz")
 async def healthz():
     return {"ok": True}
+
+
+@app.get("/debug/config")
+async def debug_config():
+    from app.config import settings
+    return {
+        "telegram_bot_token_set": bool(settings.telegram_bot_token),
+        "telegram_allowed_user_ids": settings.telegram_allowed_user_ids,
+        "telegram_webhook_secret_set": bool(settings.telegram_webhook_secret),
+        "supabase_url_set": bool(settings.supabase_url),
+        "supabase_key_set": bool(settings.supabase_service_role_key),
+        "anthropic_key_set": bool(settings.anthropic_api_key),
+        "elevenlabs_key_set": bool(settings.elevenlabs_api_key),
+    }
