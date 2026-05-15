@@ -68,6 +68,19 @@ async def debug_run(link_id: str):
     return results
 
 
+@app.get("/debug/voices")
+async def debug_voices():
+    """List ElevenLabs voices available in this account."""
+    import httpx
+    from app.config import settings
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(
+            "https://api.elevenlabs.io/v1/voices",
+            headers={"xi-api-key": settings.elevenlabs_api_key},
+        )
+    return r.json()
+
+
 @app.get("/debug/config")
 async def debug_config():
     from app.config import settings
