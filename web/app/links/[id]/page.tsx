@@ -129,12 +129,12 @@ export default async function LinkDetail({ params }: { params: { id: string } })
           {/* Napkin Diagram */}
           {notes.napkin_url && (
             <div className="mt-8">
-              <p className="text-sm font-semibold mb-3 text-gray-200">Visual Diagram</p>
-              <iframe
+              <p className="text-sm font-semibold mb-3 text-gray-200">AI Visual</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={notes.napkin_url}
-                className="w-full rounded-xl border border-gray-700"
-                style={{ height: "480px" }}
-                allow="fullscreen"
+                alt="Napkin AI visual diagram"
+                className="w-full rounded-xl bg-gray-900 p-2"
               />
             </div>
           )}

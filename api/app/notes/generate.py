@@ -134,7 +134,7 @@ async def generate_notes(link_id: str) -> None:
 
     parsed = _parse_response(raw)
 
-    db.table("notes").insert({
+    note_row = db.table("notes").insert({
         "link_id": link_id,
         "markdown": parsed["markdown"],
         "summary": parsed["summary"],
@@ -149,6 +149,18 @@ async def generate_notes(link_id: str) -> None:
     }).execute()
 
     db.table("links").update({"status": "notes_ready"}).eq("id", link_id).execute()
+
+    # Generate Napkin visual from the key takeaways (concise content works best)
+    napkin_content = parsed["summary"] or ""
+    if parsed["key_takeaways"]:
+        napkin_content += "\n" + "\n".join(f"• {t}" for t in parsed["key_takeaways"])
+    try:
+        from app.notes.napkin import generate_napkin_visual
+        napkin_url = await generate_napkin_visual(link_id, napkin_content)
+        if napkin_url and note_row.data:
+            db.table("notes").update({"napkin_url": napkin_url}).eq("id", note_row.data[0]["id"]).execute()
+    except Exception:
+        logger.exception(f"Napkin visual generation failed for {link_id} — non-fatal")
 
     cost_est = round(tokens_in * 0.000003 + tokens_out * 0.000015, 4)
     logger.info(
