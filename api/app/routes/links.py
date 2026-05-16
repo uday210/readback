@@ -1,12 +1,51 @@
 import asyncio
 import logging
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from app.db import get_supabase
 
 router = APIRouter(prefix="/links")
 logger = logging.getLogger(__name__)
+
+
+class AddLinkRequest(BaseModel):
+    url: str
+
+
+@router.post("")
+async def add_link(body: AddLinkRequest):
+    url = body.url.strip()
+    if not url.startswith(("http://", "https://")):
+        raise HTTPException(status_code=422, detail="Please enter a valid URL starting with http:// or https://")
+
+    db = get_supabase()
+
+    # Deduplicate within last 24 hours
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    existing = db.table("links").select("id").eq("url", url).gte("created_at", cutoff).execute()
+    if existing.data:
+        return {"link_id": existing.data[0]["id"], "duplicate": True}
+
+    from app.telegram.handlers import detect_source_type
+    source_type = detect_source_type(url)
+
+    row = db.table("links").insert({
+        "url": url,
+        "source_type": source_type,
+        "source_platform": "web",
+        "status": "received",
+    }).execute()
+
+    link_id = row.data[0]["id"]
+    logger.info(f"Web add: {link_id} ({source_type}) {url}")
+
+    from app.worker.pipeline import run_pipeline
+    asyncio.create_task(run_pipeline(link_id))
+
+    return {"link_id": link_id, "source_type": source_type, "duplicate": False}
 
 
 @router.get("")

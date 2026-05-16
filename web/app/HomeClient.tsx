@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import SignOutButton from "./SignOutButton";
 
 type LinkRow = {
@@ -43,9 +44,53 @@ function timeAgo(iso: string) {
 }
 
 export default function HomeClient({ rows }: { rows: LinkRow[] }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "status" | "source">("newest");
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [addUrl, setAddUrl] = useState("");
+  const [addState, setAddState] = useState<"idle" | "loading" | "success" | "duplicate" | "error">("idle");
+  const [addError, setAddError] = useState("");
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleAddUrl(e: React.FormEvent) {
+    e.preventDefault();
+    if (!addUrl.trim()) return;
+    setAddState("loading");
+    setAddError("");
+    try {
+      const r = await fetch("/api/links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: addUrl.trim() }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        setAddState("error");
+        setAddError(data.detail ?? "Failed to add URL");
+        return;
+      }
+      setAddState(data.duplicate ? "duplicate" : "success");
+      setAddUrl("");
+      setTimeout(() => {
+        setShowAdd(false);
+        setAddState("idle");
+        router.refresh();
+      }, 1500);
+    } catch {
+      setAddState("error");
+      setAddError("Network error — try again");
+    }
+  }
+
+  function openAdd() {
+    setShowAdd(true);
+    setAddState("idle");
+    setAddUrl("");
+    setTimeout(() => addInputRef.current?.focus(), 50);
+  }
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -95,16 +140,65 @@ export default function HomeClient({ rows }: { rows: LinkRow[] }) {
             </div>
             <span className="font-bold text-[15px] tracking-tight text-slate-900">Readback</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-3 text-xs">
               <span className="text-emerald-600 font-semibold">{readyCount} ready</span>
               {processingCount > 0 && <span className="text-amber-600">{processingCount} processing</span>}
               <span className="text-slate-300">·</span>
               <span className="text-slate-400">{rows.length} total</span>
             </div>
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium shadow-sm"
+            >
+              <span className="text-base leading-none">＋</span>
+              <span className="hidden sm:inline">Add URL</span>
+            </button>
             <SignOutButton />
           </div>
         </div>
+
+        {/* Collapsible add form */}
+        {showAdd && (
+          <div className="border-t border-slate-100 bg-slate-50 px-5 py-3">
+            <form onSubmit={handleAddUrl} className="max-w-5xl mx-auto flex gap-2 items-center">
+              <input
+                ref={addInputRef}
+                type="url"
+                value={addUrl}
+                onChange={e => setAddUrl(e.target.value)}
+                placeholder="Paste any URL — YouTube, article, Substack, GitHub…"
+                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 shadow-sm"
+                disabled={addState === "loading" || addState === "success" || addState === "duplicate"}
+              />
+              <button
+                type="submit"
+                disabled={!addUrl.trim() || addState === "loading" || addState === "success" || addState === "duplicate"}
+                className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors font-medium shadow-sm whitespace-nowrap"
+              >
+                {addState === "loading" ? (
+                  <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin inline-block" /> Processing…</>
+                ) : addState === "success" ? (
+                  "✓ Added!"
+                ) : addState === "duplicate" ? (
+                  "Already saved"
+                ) : (
+                  "Add →"
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowAdd(false); setAddState("idle"); }}
+                className="text-slate-400 hover:text-slate-600 text-lg leading-none px-1 transition-colors"
+              >
+                ✕
+              </button>
+            </form>
+            {addState === "error" && (
+              <p className="text-xs text-red-600 mt-1.5 max-w-5xl mx-auto">{addError}</p>
+            )}
+          </div>
+        )}
       </header>
 
       <main className="max-w-5xl mx-auto px-5 py-6">
