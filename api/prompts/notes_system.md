@@ -27,19 +27,12 @@ Do not force a connection.
 
 ---
 
-After the markdown sections above, output the following four blocks in this exact order.
+After the markdown sections above, output the following blocks in this exact order.
 
 ## Mermaid Diagram
 A concept map or mind map of the main ideas and their relationships.
 Use `graph TD` or `mindmap` syntax. Keep it to 8–12 nodes maximum.
-Output as a fenced code block tagged `mermaid`. Example:
-
-```mermaid
-graph TD
-    A[Main Concept] --> B[Idea 1]
-    A --> C[Idea 2]
-    B --> D[Detail]
-```
+Output as a fenced code block tagged `mermaid`.
 
 ## Flashcards
 5–8 question-answer pairs covering the most important ideas for spaced repetition.
@@ -50,6 +43,25 @@ Output as a single-line JSON array immediately after the heading (no code fence)
 3–5 multiple-choice questions to test comprehension. Each question has exactly 4 options.
 Output as a single-line JSON array immediately after the heading (no code fence):
 [{"question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "A"}, ...]
+
+## Analogy
+One memorable analogy that makes the core concept instantly understandable to someone unfamiliar with the topic.
+Output as a single paragraph of plain text on one line immediately after the heading.
+
+## Action Plan
+3–5 concrete next steps to apply this knowledge, especially relevant to Salesforce development.
+Output as a single-line JSON array immediately after the heading:
+[{"step": "short action title", "details": "one sentence of detail"}, ...]
+
+## Comparison Table
+A markdown table comparing the main concepts, tools, or approaches discussed.
+Only include if there are at least 2 clearly comparable items. Otherwise output the word: null
+Format as a standard markdown table with header row and separator.
+
+## Tweet Thread
+A 5-tweet breakdown distilling the most important points. Each tweet max 280 characters. Start tweet 1 with a hook.
+Output as a single-line JSON array immediately after the heading:
+["tweet 1 text", "tweet 2 text", "tweet 3 text", "tweet 4 text", "tweet 5 text"]
 
 ---
 

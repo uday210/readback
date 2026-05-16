@@ -18,12 +18,23 @@ TAKEAWAYS_RE = re.compile(r"## Key Takeaways\s*\n(.*?)(?=\n##|\Z)", re.DOTALL)
 MERMAID_RE = re.compile(r"## Mermaid Diagram\s*\n```mermaid\s*\n(.*?)```", re.DOTALL)
 FLASHCARDS_RE = re.compile(r"## Flashcards\s*\n(\[.*?\])", re.DOTALL)
 QUIZ_RE = re.compile(r"## Quiz\s*\n(\[.*?\])", re.DOTALL)
+ANALOGY_RE = re.compile(r"## Analogy\s*\n(.+?)(?=\n##|\Z)", re.DOTALL)
+ACTION_PLAN_RE = re.compile(r"## Action Plan\s*\n(\[.*?\])", re.DOTALL)
+COMPARISON_TABLE_RE = re.compile(r"## Comparison Table\s*\n(.*?)(?=\n##|\Z)", re.DOTALL)
+TWEET_THREAD_RE = re.compile(r"## Tweet Thread\s*\n(\[.*?\])", re.DOTALL)
 
-# Sections to strip from the main markdown
 STRIP_SECTIONS_RE = re.compile(
-    r"\n*## (Mermaid Diagram|Flashcards|Quiz)\s*\n.*?(?=\n## |\Z)",
+    r"\n*## (Mermaid Diagram|Flashcards|Quiz|Analogy|Action Plan|Comparison Table|Tweet Thread)\s*\n.*?(?=\n## |\Z)",
     re.DOTALL,
 )
+
+
+def _parse_json(text: str, label: str):
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        logger.warning(f"Failed to parse {label} JSON")
+        return None
 
 
 def _parse_response(raw: str) -> dict:
@@ -53,27 +64,44 @@ def _parse_response(raw: str) -> dict:
         ]
 
     mermaid_diagram: str | None = None
-    mermaid_match = MERMAID_RE.search(markdown)
-    if mermaid_match:
-        mermaid_diagram = mermaid_match.group(1).strip()
+    m = MERMAID_RE.search(markdown)
+    if m:
+        mermaid_diagram = m.group(1).strip()
 
-    flashcards: list | None = None
-    fc_match = FLASHCARDS_RE.search(markdown)
-    if fc_match:
-        try:
-            flashcards = json.loads(fc_match.group(1))
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse flashcards JSON")
+    flashcards = None
+    m = FLASHCARDS_RE.search(markdown)
+    if m:
+        flashcards = _parse_json(m.group(1), "flashcards")
 
-    quiz: list | None = None
-    quiz_match = QUIZ_RE.search(markdown)
-    if quiz_match:
-        try:
-            quiz = json.loads(quiz_match.group(1))
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse quiz JSON")
+    quiz = None
+    m = QUIZ_RE.search(markdown)
+    if m:
+        quiz = _parse_json(m.group(1), "quiz")
 
-    # Strip generated learning sections from the main notes markdown
+    analogy: str | None = None
+    m = ANALOGY_RE.search(markdown)
+    if m:
+        analogy = m.group(1).strip()
+        if analogy.lower() == "null":
+            analogy = None
+
+    action_plan = None
+    m = ACTION_PLAN_RE.search(markdown)
+    if m:
+        action_plan = _parse_json(m.group(1), "action_plan")
+
+    comparison_table: str | None = None
+    m = COMPARISON_TABLE_RE.search(markdown)
+    if m:
+        ct = m.group(1).strip()
+        if ct.lower() != "null" and "|" in ct:
+            comparison_table = ct
+
+    tweet_thread = None
+    m = TWEET_THREAD_RE.search(markdown)
+    if m:
+        tweet_thread = _parse_json(m.group(1), "tweet_thread")
+
     clean_markdown = STRIP_SECTIONS_RE.sub("", markdown).strip()
 
     return {
@@ -84,6 +112,10 @@ def _parse_response(raw: str) -> dict:
         "mermaid_diagram": mermaid_diagram,
         "flashcards": flashcards,
         "quiz": quiz,
+        "analogy": analogy,
+        "action_plan": action_plan,
+        "comparison_table": comparison_table,
+        "tweet_thread": tweet_thread,
     }
 
 
@@ -123,7 +155,7 @@ async def generate_notes(link_id: str) -> None:
     client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
     response = await client.messages.create(
         model=settings.anthropic_model,
-        max_tokens=6000,
+        max_tokens=8000,
         system=system_prompt,
         messages=[{"role": "user", "content": user_content}],
     )
@@ -143,6 +175,10 @@ async def generate_notes(link_id: str) -> None:
         "mermaid_diagram": parsed["mermaid_diagram"],
         "flashcards": json.dumps(parsed["flashcards"]) if parsed["flashcards"] else None,
         "quiz": json.dumps(parsed["quiz"]) if parsed["quiz"] else None,
+        "analogy": parsed["analogy"],
+        "action_plan": json.dumps(parsed["action_plan"]) if parsed["action_plan"] else None,
+        "comparison_table": parsed["comparison_table"],
+        "tweet_thread": json.dumps(parsed["tweet_thread"]) if parsed["tweet_thread"] else None,
         "model": settings.anthropic_model,
         "tokens_in": tokens_in,
         "tokens_out": tokens_out,
@@ -150,7 +186,6 @@ async def generate_notes(link_id: str) -> None:
 
     db.table("links").update({"status": "notes_ready"}).eq("id", link_id).execute()
 
-    # Generate Napkin visual from the key takeaways (concise content works best)
     napkin_content = parsed["summary"] or ""
     if parsed["key_takeaways"]:
         napkin_content += "\n" + "\n".join(f"• {t}" for t in parsed["key_takeaways"])
@@ -164,9 +199,5 @@ async def generate_notes(link_id: str) -> None:
 
     cost_est = round(tokens_in * 0.000003 + tokens_out * 0.000015, 4)
     logger.info(
-        f"Notes done for {link_id}: {tokens_in}in/{tokens_out}out tokens, "
-        f"~${cost_est}, tags={parsed['tags']}, "
-        f"mermaid={'yes' if parsed['mermaid_diagram'] else 'no'}, "
-        f"flashcards={len(parsed['flashcards']) if parsed['flashcards'] else 0}, "
-        f"quiz={len(parsed['quiz']) if parsed['quiz'] else 0}"
+        f"Notes done for {link_id}: {tokens_in}in/{tokens_out}out tokens, ~${cost_est}, tags={parsed['tags']}"
     )

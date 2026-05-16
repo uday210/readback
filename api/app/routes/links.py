@@ -1,8 +1,12 @@
+import asyncio
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from app.db import get_supabase
 
 router = APIRouter(prefix="/links")
+logger = logging.getLogger(__name__)
 
 
 @router.get("")
@@ -29,3 +33,47 @@ async def get_link(link_id: str):
     if not row.data:
         raise HTTPException(status_code=404, detail="Link not found")
     return row.data
+
+
+@router.delete("/{link_id}")
+async def delete_link(link_id: str):
+    db = get_supabase()
+
+    # Delete storage files (non-fatal if missing)
+    try:
+        db.storage.from_("podcasts").remove([f"{link_id}.mp3", f"visuals/{link_id}.svg"])
+    except Exception:
+        pass
+
+    db.table("notes").delete().eq("link_id", link_id).execute()
+    db.table("podcasts").delete().eq("link_id", link_id).execute()
+    db.table("contents").delete().eq("link_id", link_id).execute()
+    db.table("links").delete().eq("id", link_id).execute()
+
+    logger.info(f"Deleted link {link_id} and all related data")
+    return {"deleted": True}
+
+
+@router.post("/{link_id}/regenerate")
+async def regenerate_link(link_id: str):
+    db = get_supabase()
+
+    link = db.table("links").select("id,status").eq("id", link_id).single().execute()
+    if not link.data:
+        raise HTTPException(status_code=404, detail="Link not found")
+
+    # Clean up existing derived data
+    try:
+        db.storage.from_("podcasts").remove([f"{link_id}.mp3", f"visuals/{link_id}.svg"])
+    except Exception:
+        pass
+
+    db.table("notes").delete().eq("link_id", link_id).execute()
+    db.table("podcasts").delete().eq("link_id", link_id).execute()
+    db.table("links").update({"status": "received", "error": None}).eq("id", link_id).execute()
+
+    from app.worker.pipeline import run_pipeline
+    asyncio.create_task(run_pipeline(link_id))
+
+    logger.info(f"Regenerating link {link_id}")
+    return {"regenerating": True, "link_id": link_id}
