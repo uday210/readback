@@ -27,7 +27,7 @@ export default function LinkActions({ linkId }: { linkId: string }) {
       <button
         onClick={handleRegenerate}
         disabled={regenerating}
-        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] text-gray-400 hover:text-gray-200 hover:border-white/10 disabled:opacity-50 transition-all"
+        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-slate-800 hover:border-slate-300 disabled:opacity-50 transition-all shadow-sm"
       >
         <span className={regenerating ? "animate-spin" : ""}>↻</span>
         {regenerating ? "Regenerating…" : "Regenerate"}
@@ -35,7 +35,7 @@ export default function LinkActions({ linkId }: { linkId: string }) {
       <button
         onClick={handleDelete}
         disabled={deleting}
-        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-red-900/40 bg-red-950/20 text-red-500 hover:text-red-400 hover:border-red-800/60 disabled:opacity-50 transition-all"
+        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:text-red-700 hover:border-red-300 disabled:opacity-50 transition-all shadow-sm"
       >
         {deleting ? "Deleting…" : "Delete"}
       </button>

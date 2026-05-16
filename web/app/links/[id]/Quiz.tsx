@@ -17,9 +17,9 @@ export default function Quiz({ questions }: { questions: Question[] }) {
         const show = revealed[qi];
         const correct = q.answer;
         return (
-          <div key={qi} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-            <p className="text-sm font-medium text-gray-100 mb-4 leading-relaxed">
-              <span className="text-indigo-400 font-bold mr-2">{qi + 1}.</span>
+          <div key={qi} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-slate-800 mb-4 leading-relaxed">
+              <span className="text-indigo-600 font-bold mr-2">{qi + 1}.</span>
               {q.question}
             </p>
             <div className="grid gap-2">
@@ -30,14 +30,14 @@ export default function Quiz({ questions }: { questions: Question[] }) {
                 let cls = "text-left w-full text-sm px-4 py-2.5 rounded-xl border transition-all ";
                 if (show) {
                   cls += isCorrect
-                    ? "bg-emerald-950/50 border-emerald-700/60 text-emerald-300"
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-800"
                     : isPicked
-                    ? "bg-red-950/50 border-red-800/60 text-red-400"
-                    : "bg-white/[0.02] border-white/[0.04] text-gray-600";
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : "bg-slate-50 border-slate-200 text-slate-400";
                 } else {
                   cls += isPicked
-                    ? "bg-indigo-950/60 border-indigo-700/60 text-indigo-200"
-                    : "bg-white/[0.02] border-white/[0.06] text-gray-300 hover:border-white/10 hover:bg-white/[0.04]";
+                    ? "bg-indigo-50 border-indigo-300 text-indigo-800"
+                    : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-white";
                 }
                 return (
                   <button key={opt} className={cls} onClick={() => setSelected((s) => ({ ...s, [qi]: letter }))} disabled={show}>
@@ -49,14 +49,14 @@ export default function Quiz({ questions }: { questions: Question[] }) {
             <div className="mt-3 flex items-center justify-between">
               {picked && !show && (
                 <button
-                  className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                  className="text-xs text-indigo-600 hover:text-indigo-800 transition-colors font-medium"
                   onClick={() => setRevealed((r) => ({ ...r, [qi]: true }))}
                 >
                   Check answer →
                 </button>
               )}
               {show && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-500">
                   {picked === correct
                     ? "✅ Correct!"
                     : `❌ Correct: ${correct}`}

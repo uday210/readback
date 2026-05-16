@@ -72,4 +72,5 @@ async def extract(url: str) -> dict:
         "word_count": len(text.split()),
         "extraction_method": "youtube-transcript-api",
         "metadata": {"video_id": video_id, "channel": meta["channel"]},
+        "og_image": f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg",
     }

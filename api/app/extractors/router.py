@@ -59,6 +59,8 @@ async def run_extraction(link_id: str) -> None:
             update["title"] = result["title"]
         if result.get("author"):
             update["author"] = result["author"]
+        if result.get("og_image"):
+            update["og_image"] = result["og_image"]
         db.table("links").update(update).eq("id", link_id).execute()
 
         logger.info(f"Extracted {link_id} via {result.get('extraction_method')}, {result.get('word_count', 0)} words")

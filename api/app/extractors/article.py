@@ -34,11 +34,13 @@ async def extract(url: str) -> dict:
         favor_precision=True,
     )
 
+    og_image = None
     if result_json:
         data = json.loads(result_json)
         text = data.get("text", "")
         title = data.get("title") or data.get("sitename")
         author = data.get("author")
+        og_image = data.get("image") or None
         method = "trafilatura"
     else:
         # Fallback: readability-lxml
@@ -63,4 +65,5 @@ async def extract(url: str) -> dict:
         "word_count": len(text.split()),
         "extraction_method": method,
         "metadata": {},
+        "og_image": og_image,
     }
