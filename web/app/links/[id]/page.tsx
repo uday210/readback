@@ -8,6 +8,7 @@ import Quiz from "./Quiz";
 import TweetThread from "./TweetThread";
 import LinkActions from "./LinkActions";
 import VideoGenerator from "./VideoGenerator";
+import CollapsibleNotes from "./CollapsibleNotes";
 
 export const revalidate = 0;
 
@@ -169,9 +170,7 @@ export default async function LinkDetail({ params }: { params: { id: string } })
               <section>
                 <SectionHeader icon="⚖️" title="Comparison" />
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 overflow-x-auto shadow-sm">
-                  <div className="prose prose-sm max-w-none
-                    prose-table:w-full prose-th:text-slate-700 prose-th:font-semibold
-                    prose-td:text-slate-600 prose-th:border-slate-200 prose-td:border-slate-200">
+                  <div className="md-table">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {notes.comparison_table}
                     </ReactMarkdown>
@@ -215,22 +214,11 @@ export default async function LinkDetail({ params }: { params: { id: string } })
               />
             </section>
 
-            {/* Full Notes */}
+            {/* Full Notes — collapsible */}
             <section>
               <SectionHeader icon="📄" title="Full Notes" />
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="prose prose-sm max-w-none
-                  prose-headings:text-slate-800 prose-headings:font-semibold prose-headings:mt-6 prose-headings:mb-2
-                  prose-h2:text-base prose-h2:border-b prose-h2:border-slate-200 prose-h2:pb-1
-                  prose-p:text-slate-700 prose-p:leading-relaxed prose-p:my-2
-                  prose-li:text-slate-700 prose-li:my-0.5
-                  prose-strong:text-slate-900 prose-strong:font-semibold
-                  prose-code:text-indigo-700 prose-code:bg-indigo-50 prose-code:rounded prose-code:px-1 prose-code:text-xs
-                  prose-pre:bg-slate-800 prose-pre:border prose-pre:border-slate-300 prose-pre:rounded-xl
-                  prose-blockquote:border-indigo-400 prose-blockquote:text-slate-600 prose-blockquote:not-italic
-                  prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{notes.markdown}</ReactMarkdown>
-                </div>
+                <CollapsibleNotes markdown={notes.markdown} />
               </div>
             </section>
 

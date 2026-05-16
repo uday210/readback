@@ -13,3 +13,26 @@
   audio { color-scheme: light; }
   ::selection { background: rgba(99,102,241,0.25); }
 }
+
+/* Markdown table styling used in Comparison section */
+.md-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.md-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+}
+.md-table td {
+  color: #475569;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+.md-table tr:hover td { background: #f8fafc; }
