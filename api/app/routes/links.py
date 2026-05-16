@@ -54,6 +54,41 @@ async def delete_link(link_id: str):
     return {"deleted": True}
 
 
+@router.post("/{link_id}/video")
+async def start_video(link_id: str):
+    db = get_supabase()
+    link = db.table("links").select("id, title, og_image, video_status").eq("id", link_id).single().execute()
+    if not link.data:
+        raise HTTPException(status_code=404, detail="Link not found")
+
+    if link.data.get("video_status") == "generating":
+        raise HTTPException(status_code=409, detail="Video already generating")
+
+    og_image = link.data.get("og_image")
+    if not og_image:
+        raise HTTPException(status_code=422, detail="No image available — share the link again to fetch one")
+
+    title = link.data.get("title") or link_id[:8]
+
+    from app.video.runway import generate_video
+    asyncio.create_task(generate_video(link_id, og_image, title))
+
+    logger.info(f"Video generation started for {link_id}")
+    return {"generating": True, "link_id": link_id}
+
+
+@router.get("/{link_id}/video")
+async def get_video_status(link_id: str):
+    db = get_supabase()
+    link = db.table("links").select("video_url, video_status").eq("id", link_id).single().execute()
+    if not link.data:
+        raise HTTPException(status_code=404, detail="Link not found")
+    return {
+        "video_url": link.data.get("video_url"),
+        "video_status": link.data.get("video_status"),
+    }
+
+
 @router.post("/{link_id}/regenerate")
 async def regenerate_link(link_id: str):
     db = get_supabase()

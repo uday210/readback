@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
 
     napkin_api_key: str = ""
+    runwayml_api_key: str = ""
 
     youtube_cookies_file: str = ""
 

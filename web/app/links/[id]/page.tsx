@@ -7,6 +7,7 @@ import Flashcards from "./Flashcards";
 import Quiz from "./Quiz";
 import TweetThread from "./TweetThread";
 import LinkActions from "./LinkActions";
+import VideoGenerator from "./VideoGenerator";
 
 export const revalidate = 0;
 
@@ -202,6 +203,17 @@ export default async function LinkDetail({ params }: { params: { id: string } })
                 <TweetThread tweets={tweetThread} />
               </section>
             )}
+
+            {/* AI Video */}
+            <section>
+              <SectionHeader icon="🎬" title="AI Video" />
+              <VideoGenerator
+                linkId={link.id}
+                initialStatus={link.video_status ?? null}
+                initialVideoUrl={link.video_url ?? null}
+                hasOgImage={!!link.og_image}
+              />
+            </section>
 
             {/* Full Notes */}
             <section>
