@@ -14,14 +14,64 @@
   ::selection { background: rgba(99,102,241,0.25); }
 }
 
-/* Markdown table styling used in Comparison section */
-.md-table table {
+/* ── Markdown content (notes + comparison table) ──────────────────── */
+.md-content h1, .md-content h2, .md-content h3, .md-content h4 {
+  color: #1e293b;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.4em;
+  line-height: 1.35;
+}
+.md-content h1 { font-size: 1.15rem; }
+.md-content h2 { font-size: 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+.md-content h3 { font-size: 0.9rem; }
+.md-content p  { color: #374151; font-size: 0.875rem; line-height: 1.7; margin: 0.5em 0; }
+.md-content li { color: #374151; font-size: 0.875rem; line-height: 1.65; margin: 2px 0; }
+.md-content ul { padding-left: 1.4em; list-style-type: disc; }
+.md-content ol { padding-left: 1.4em; list-style-type: decimal; }
+.md-content strong { color: #0f172a; font-weight: 600; }
+.md-content em    { color: #475569; }
+.md-content a     { color: #4f46e5; text-decoration: none; }
+.md-content a:hover { text-decoration: underline; }
+.md-content hr    { border: none; border-top: 1px solid #e2e8f0; margin: 1.25em 0; }
+.md-content blockquote {
+  border-left: 3px solid #818cf8;
+  margin: 0.75em 0;
+  padding: 4px 16px;
+  background: #f8fafc;
+  border-radius: 0 8px 8px 0;
+}
+.md-content blockquote p { color: #475569; margin: 0; }
+.md-content code {
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.8rem;
+  font-family: ui-monospace, monospace;
+}
+.md-content pre {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+.md-content pre code {
+  background: transparent;
+  color: #e2e8f0;
+  padding: 0;
+  font-size: 0.8rem;
+}
+
+/* Markdown table (comparison section) */
+.md-content table, .md-table table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
 }
-.md-table th {
+.md-content th, .md-table th {
   background: #f8fafc;
   color: #334155;
   font-weight: 600;
@@ -29,10 +79,10 @@
   padding: 8px 12px;
   border: 1px solid #cbd5e1;
 }
-.md-table td {
+.md-content td, .md-table td {
   color: #475569;
   padding: 8px 12px;
   border: 1px solid #e2e8f0;
   vertical-align: top;
 }
-.md-table tr:hover td { background: #f8fafc; }
+.md-content tr:hover td, .md-table tr:hover td { background: #f8fafc; }

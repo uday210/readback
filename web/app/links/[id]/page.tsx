@@ -170,7 +170,7 @@ export default async function LinkDetail({ params }: { params: { id: string } })
               <section>
                 <SectionHeader icon="⚖️" title="Comparison" />
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 overflow-x-auto shadow-sm">
-                  <div className="md-table">
+                  <div className="md-content">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {notes.comparison_table}
                     </ReactMarkdown>
