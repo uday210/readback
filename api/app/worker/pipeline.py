@@ -30,7 +30,8 @@ async def _send_audio(audio_url: str, title: str) -> None:
             "chat_id": chat_id,
             "audio": audio_url,
             "title": title[:64],
-            "parse_mode": "HTML",
+            "performer": "Readback",
+            "caption": f"🎧 {title[:200]}",
         })
         if r.status_code != 200:
             logger.warning(f"sendAudio failed: {r.text[:200]}")
