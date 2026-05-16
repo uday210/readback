@@ -13,6 +13,7 @@
     "react": "^18",
     "react-dom": "^18",
     "@supabase/supabase-js": "^2.43.4",
+    "@supabase/ssr": "^0.5.2",
     "react-markdown": "^9.0.1",
     "rehype-highlight": "^7.0.0",
     "remark-gfm": "^4.0.0"
