@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase";
+import Link from "next/link";
 
 export const revalidate = 0;
 
@@ -10,65 +11,145 @@ type LinkRow = {
   status: string;
   created_at: string;
   podcasts: { audio_url: string | null }[];
+  notes: { tags: string[] | null }[];
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  podcast_ready: "bg-green-900 text-green-300",
-  notes_ready: "bg-blue-900 text-blue-300",
-  extracted: "bg-purple-900 text-purple-300",
-  extracting: "bg-yellow-900 text-yellow-300",
-  failed: "bg-red-900 text-red-300",
-  received: "bg-gray-700 text-gray-300",
+const SOURCE_ICON: Record<string, string> = {
+  youtube: "▶",
+  linkedin: "in",
+  substack: "S",
+  medium: "M",
+  github: "⌥",
+  article: "⊞",
 };
+
+const STATUS_CONFIG: Record<string, { dot: string; label: string; text: string }> = {
+  podcast_ready: { dot: "bg-emerald-400", label: "Ready", text: "text-emerald-400" },
+  notes_ready:   { dot: "bg-blue-400",    label: "Notes", text: "text-blue-400" },
+  extracted:     { dot: "bg-violet-400",  label: "Extracted", text: "text-violet-400" },
+  extracting:    { dot: "bg-amber-400 animate-pulse", label: "Processing", text: "text-amber-400" },
+  failed:        { dot: "bg-red-400",     label: "Failed", text: "text-red-400" },
+  received:      { dot: "bg-gray-500",    label: "Received", text: "text-gray-500" },
+};
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short", day: "numeric", year: "numeric",
+  });
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.received;
+  return (
+    <span className={`flex items-center gap-1.5 text-xs font-medium ${cfg.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
+}
 
 export default async function Home() {
   const supabase = createClient();
   const { data: links, error } = await supabase
     .from("links")
-    .select("id, url, title, source_type, status, created_at, podcasts(audio_url)")
+    .select("id, url, title, source_type, status, created_at, podcasts(audio_url), notes(tags)")
     .order("created_at", { ascending: false })
     .limit(50);
 
-  if (error) {
-    return (
-      <main className="p-6">
-        <p className="text-red-400">Failed to load: {error.message}</p>
-      </main>
-    );
-  }
+  const total = links?.length ?? 0;
+  const ready = links?.filter((l: LinkRow) => l.status === "podcast_ready").length ?? 0;
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 tracking-tight">Readback</h1>
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="sticky top-0 z-10 border-b border-white/5 glass">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold">R</div>
+            <span className="font-semibold tracking-tight">Readback</span>
+          </div>
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            <span>{ready} ready</span>
+            <span className="text-gray-700">·</span>
+            <span>{total} total</span>
+          </div>
+        </div>
+      </header>
 
-      {!links?.length && (
-        <p className="text-gray-400 text-sm">No links yet — share something to your Telegram bot to get started.</p>
-      )}
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        {error && (
+          <div className="rounded-xl border border-red-900 bg-red-950/50 p-4 text-sm text-red-400 mb-6">
+            Failed to load: {error.message}
+          </div>
+        )}
 
-      <ul className="space-y-3">
-        {links?.map((link: LinkRow) => {
-          const audioUrl = link.podcasts?.[0]?.audio_url ?? null;
-          return (
-            <li key={link.id} className="bg-gray-900 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">{link.source_type}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[link.status] ?? STATUS_COLORS.received}`}>
-                  {link.status}
-                </span>
+        {!links?.length && !error && (
+          <div className="text-center py-24">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-2xl mx-auto mb-4">🎧</div>
+            <p className="text-gray-400 font-medium">No links yet</p>
+            <p className="text-gray-600 text-sm mt-1">Share a URL to your Telegram bot to get started</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {links?.map((link: LinkRow) => {
+            const audioUrl = link.podcasts?.[0]?.audio_url ?? null;
+            const tags = link.notes?.[0]?.tags ?? [];
+            const sourceIcon = SOURCE_ICON[link.source_type] ?? "⊞";
+            const isPodcastReady = link.status === "podcast_ready";
+
+            return (
+              <div
+                key={link.id}
+                className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.02] card-hover flex flex-col overflow-hidden"
+              >
+                {/* Accent line */}
+                {isPodcastReady && (
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+                )}
+
+                <div className="p-5 flex-1">
+                  {/* Top row */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
+                      {sourceIcon} {link.source_type}
+                    </span>
+                    <StatusBadge status={link.status} />
+                  </div>
+
+                  {/* Title */}
+                  <Link href={`/links/${link.id}`}>
+                    <h2 className="font-medium text-gray-100 line-clamp-3 leading-snug text-sm mb-3 group-hover:text-white transition-colors">
+                      {link.title || link.url}
+                    </h2>
+                  </Link>
+
+                  {/* Tags */}
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {tags.slice(0, 4).map((tag: string) => (
+                        <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-950/60 text-indigo-400 border border-indigo-900/40">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Date */}
+                  <p className="text-[11px] text-gray-600">{formatDate(link.created_at)}</p>
+                </div>
+
+                {/* Audio player */}
+                {audioUrl && (
+                  <div className="px-4 pb-4">
+                    <audio controls src={audioUrl} className="w-full h-8" />
+                  </div>
+                )}
               </div>
-              <a href={`/links/${link.id}`} className="font-medium hover:text-blue-400 transition-colors line-clamp-2 block">
-                {link.title || link.url}
-              </a>
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(link.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
-              </p>
-              {audioUrl && (
-                <audio controls src={audioUrl} className="w-full mt-3 h-8" />
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </main>
+            );
+          })}
+        </div>
+      </main>
+    </div>
   );
 }

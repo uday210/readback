@@ -11,62 +11,61 @@ export default function Quiz({ questions }: { questions: Question[] }) {
   if (!questions.length) return null;
 
   return (
-    <div className="mb-8">
-      <p className="text-sm font-semibold mb-3 text-gray-200">Quiz ({questions.length} questions)</p>
-      <div className="space-y-5">
-        {questions.map((q, qi) => {
-          const picked = selected[qi];
-          const show = revealed[qi];
-          const correct = q.answer;
-          return (
-            <div key={qi} className="bg-gray-900 rounded-xl p-4 border border-gray-700">
-              <p className="text-sm text-gray-100 mb-3 font-medium">{qi + 1}. {q.question}</p>
-              <div className="space-y-2">
-                {q.options.map((opt) => {
-                  const letter = opt[0];
-                  const isCorrect = letter === correct;
-                  const isPicked = picked === letter;
-                  let cls = "text-left w-full text-sm px-3 py-2 rounded-lg border transition-colors ";
-                  if (show) {
-                    cls += isCorrect
-                      ? "bg-green-900 border-green-600 text-green-200"
-                      : isPicked
-                      ? "bg-red-900 border-red-700 text-red-300"
-                      : "bg-gray-800 border-gray-700 text-gray-400";
-                  } else {
-                    cls += isPicked
-                      ? "bg-indigo-900 border-indigo-600 text-indigo-200"
-                      : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500";
-                  }
-                  return (
-                    <button
-                      key={opt}
-                      className={cls}
-                      onClick={() => setSelected((s) => ({ ...s, [qi]: letter }))}
-                      disabled={show}
-                    >
-                      {opt}
-                    </button>
-                  );
-                })}
-              </div>
+    <div className="space-y-4">
+      {questions.map((q, qi) => {
+        const picked = selected[qi];
+        const show = revealed[qi];
+        const correct = q.answer;
+        return (
+          <div key={qi} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
+            <p className="text-sm font-medium text-gray-100 mb-4 leading-relaxed">
+              <span className="text-indigo-400 font-bold mr-2">{qi + 1}.</span>
+              {q.question}
+            </p>
+            <div className="grid gap-2">
+              {q.options.map((opt) => {
+                const letter = opt[0];
+                const isCorrect = letter === correct;
+                const isPicked = picked === letter;
+                let cls = "text-left w-full text-sm px-4 py-2.5 rounded-xl border transition-all ";
+                if (show) {
+                  cls += isCorrect
+                    ? "bg-emerald-950/50 border-emerald-700/60 text-emerald-300"
+                    : isPicked
+                    ? "bg-red-950/50 border-red-800/60 text-red-400"
+                    : "bg-white/[0.02] border-white/[0.04] text-gray-600";
+                } else {
+                  cls += isPicked
+                    ? "bg-indigo-950/60 border-indigo-700/60 text-indigo-200"
+                    : "bg-white/[0.02] border-white/[0.06] text-gray-300 hover:border-white/10 hover:bg-white/[0.04]";
+                }
+                return (
+                  <button key={opt} className={cls} onClick={() => setSelected((s) => ({ ...s, [qi]: letter }))} disabled={show}>
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center justify-between">
               {picked && !show && (
                 <button
-                  className="mt-3 text-xs text-indigo-400 hover:text-indigo-300"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
                   onClick={() => setRevealed((r) => ({ ...r, [qi]: true }))}
                 >
-                  Check answer
+                  Check answer →
                 </button>
               )}
               {show && (
-                <p className="mt-2 text-xs text-gray-400">
-                  {picked === correct ? "✅ Correct!" : `❌ Correct answer: ${correct}`}
+                <p className="text-xs text-gray-500">
+                  {picked === correct
+                    ? "✅ Correct!"
+                    : `❌ Correct: ${correct}`}
                 </p>
               )}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
